@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import './style.css';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables');
@@ -132,92 +132,23 @@ function startAutoRefresh(): void {
   }, 30000);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initializeApp() {
   startAutoRefresh();
-});
 
-const form = document.getElementById('leadForm') as HTMLFormElement;
-const submitBtn = form?.querySelector('.submit-btn') as HTMLButtonElement;
-const successModal = document.getElementById('successModal') as HTMLDivElement;
-
-if (form && submitBtn) {
-  form.addEventListener('submit', async (e: Event) => {
-    e.preventDefault();
-
-    const formData = new FormData(form);
-
-    const interests: string[] = [];
-    const interestCheckboxes = form.querySelectorAll('input[name="interests"]:checked') as NodeListOf<HTMLInputElement>;
-    interestCheckboxes.forEach(checkbox => {
-      interests.push(checkbox.value);
-    });
-
-    if (interests.length === 0) {
-      alert('Пожалуйста, выберите хотя бы один вариант обучения');
-      return;
-    }
-
-    const leadData: LeadFormData = {
-      name: formData.get('name') as string,
-      email: formData.get('email') as string,
-      phone: formData.get('phone') as string,
-      experience: formData.get('experience') as string,
-      interests: interests,
-      message: formData.get('message') as string || undefined,
-    };
-
-    submitBtn.classList.add('loading');
-    submitBtn.disabled = true;
-
-    try {
-      const googleSheetsUrl = 'https://script.google.com/macros/s/AKfycbyx7UdTbuwfOn7lG8MQFLeFgsELwfVN8oSE21_0yom9dsQs-MrNhka9hTEvcRWcX48SGg/exec';
-
-      const response = await fetch(googleSheetsUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: leadData.name,
-          email: leadData.email,
-          phone: leadData.phone,
-          experience: leadData.experience,
-          interests: leadData.interests.join(', '),
-          message: leadData.message || ''
-        })
-      });
-
-      console.log('Lead submitted to Google Sheets successfully');
-
-      form.reset();
-
-      successModal.classList.add('show');
-
-      setTimeout(() => {
-        successModal.classList.remove('show');
-      }, 5000);
-
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      alert('Произошла непредвиденная ошибка. Пожалуйста, попробуйте позже.');
-    } finally {
-      submitBtn.classList.remove('loading');
-      submitBtn.disabled = false;
-    }
-  });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('leadForm') as HTMLFormElement;
+  const submitBtn = form?.querySelector('.submit-btn') as HTMLButtonElement;
+  const successModal = document.getElementById('successModal') as HTMLDivElement;
   const navbar = document.querySelector('.navbar') as HTMLElement;
 
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 100) {
-      navbar.style.background = 'rgba(15, 23, 42, 0.95)';
-    } else {
-      navbar.style.background = 'rgba(15, 23, 42, 0.8)';
-    }
-  });
+  if (navbar) {
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 100) {
+        navbar.style.background = 'rgba(15, 23, 42, 0.95)';
+      } else {
+        navbar.style.background = 'rgba(15, 23, 42, 0.8)';
+      }
+    });
+  }
 
   const observerOptions = {
     threshold: 0.1,
@@ -234,4 +165,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const animateElements = document.querySelectorAll('.feature-card, .program-card, .testimonial-card');
   animateElements.forEach(el => observer.observe(el));
-});
+
+  if (form && submitBtn && successModal) {
+    form.addEventListener('submit', async (e: Event) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+
+      const interests: string[] = [];
+      const interestCheckboxes = form.querySelectorAll('input[name="interests"]:checked') as NodeListOf<HTMLInputElement>;
+      interestCheckboxes.forEach(checkbox => {
+        interests.push(checkbox.value);
+      });
+
+      if (interests.length === 0) {
+        alert('Пожалуйста, выберите хотя бы один вариант обучения');
+        return;
+      }
+
+      const leadData: LeadFormData = {
+        name: formData.get('name') as string,
+        email: formData.get('email') as string,
+        phone: formData.get('phone') as string,
+        experience: formData.get('experience') as string,
+        interests: interests,
+        message: formData.get('message') as string || undefined,
+      };
+
+      submitBtn.classList.add('loading');
+      submitBtn.disabled = true;
+
+      try {
+        const googleSheetsUrl = 'https://script.google.com/macros/s/AKfycbyx7UdTbuwfOn7lG8MQFLeFgsELwfVN8oSE21_0yom9dsQs-MrNhka9hTEvcRWcX48SGg/exec';
+
+        await fetch(googleSheetsUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: leadData.name,
+            email: leadData.email,
+            phone: leadData.phone,
+            experience: leadData.experience,
+            interests: leadData.interests.join(', '),
+            message: leadData.message || ''
+          })
+        });
+
+        console.log('Lead submitted to Google Sheets successfully');
+
+        form.reset();
+        successModal.classList.add('show');
+
+        setTimeout(() => {
+          successModal.classList.remove('show');
+        }, 5000);
+
+      } catch (err) {
+        console.error('Unexpected error:', err);
+        alert('Произошла непредвиденная ошибка. Пожалуйста, попробуйте позже.');
+      } finally {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+      }
+    });
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+  initializeApp();
+}
