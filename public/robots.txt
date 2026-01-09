@@ -1,0 +1,27 @@
+# Правила для всех поисковых роботов
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /private/
+
+# Специальные правила для Google
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Специальные правила для Яндекс
+User-agent: Yandex
+Allow: /
+Crawl-delay: 0
+Host: tradeacademy.com
+
+# Bing
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 0
+
+# Карта сайта
+Sitemap: https://tradeacademy.com/sitemap.xml
+Sitemap: https://tradeacademy.com/sitemap-posts.xml
+Sitemap: https://tradeacademy.com/sitemap-courses.xml
